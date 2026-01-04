@@ -32,6 +32,12 @@ const productSchema = new mongoose.Schema(
         type: String,
       },
     ],
+    coverImg: { 
+      type: String, 
+    },
+    video: {
+      type: String,
+    },
     category: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Category",
@@ -54,6 +60,8 @@ const productValidate = (product) => {
     stock: Joi.number().min(0).required(),
     category: Joi.string().required(),
     images: Joi.array().items(Joi.string()),
+    coverImg: Joi.string(),
+    video: Joi.string(),
     isActive: Joi.boolean(),
   });
 

@@ -3,7 +3,7 @@ module.exports = async function (req, res, next) {
     const token = process.env.ECOMMERCE_ACCESS;
     const incomingToken = req.headers["ecommerce-access"];
 
-    if (!Object.keys(req.headers).includes("e-access")) {
+    if (!Object.keys(req.headers).includes("ecommerce-access")) {
       return res.status(401).send("no access");
     }
 
