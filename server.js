@@ -24,10 +24,13 @@ app.use('/api/v1/auth', authRouter);
 // ADMİN ROUTERS
 
 const userRouter = require('./routes/admin/user');
-app.use('/api/v1/ad/users', auth, isAdmin, userRouter);
+app.use('/api/v1/ad/user', auth, isAdmin, userRouter);
 
 const categoryRouter = require("./routes/admin/category");
-app.use("/api/v1/ad/categories", auth, isAdmin, categoryRouter);
+app.use("/api/v1/ad/category", auth, isAdmin, categoryRouter);
+
+const productRouter = require("./routes/admin/product");
+app.use("/api/v1/ad/product", auth, isAdmin, productRouter);
 
 
 
