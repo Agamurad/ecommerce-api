@@ -36,6 +36,7 @@ const registerValidate = (user) => {
     fullname: Joi.string().required(),
     email: Joi.string().min(7).max(30).email().required(),
     password: Joi.string().min(8).required(),
+    role: Joi.string()
   });
 
   return schema.validate(user);

@@ -75,7 +75,7 @@ exports.createCategory = async (req, res) => {
   }
 };
 
-exports.updateCategory = async (req, res) => {
+exports.editCategory = async (req, res) => {
   try {
     const { error } = categoryValidate(req.body);
     if (error) {

@@ -20,6 +20,8 @@ app.use('/api/v1/', surfaceRouter);
 const authRouter = require('./routes/client/auth');
 app.use('/api/v1/auth', authRouter);
 
+const basketRouter = require('./routes/client/basket');
+app.use("./api/v1/basket", auth, basketRouter);
 
 // ADMİN ROUTERS
 
