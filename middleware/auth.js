@@ -6,7 +6,7 @@ module.exports = function(req, res, next) {
     return res.status(401).json({ message: "You do not have authority" });
   }
   try {
-    const decodedToken = jwt.verify(token, "jwtPrivateKey");
+    const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decodedToken;
     next();
   } catch (error) {

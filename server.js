@@ -23,6 +23,10 @@ app.use('/api/v1/auth', authRouter);
 const basketRouter = require('./routes/client/basket');
 app.use("./api/v1/basket", auth, basketRouter);
 
+const orderRouter = require("./routes/client/order");
+app.use("/api/v1/order", orderRouter);
+
+
 // ADMİN ROUTERS
 
 const userRouter = require('./routes/admin/user');
