@@ -1,7 +1,7 @@
 const { Basket } = require("../models/basket");
 const { Order } = require("../models/order");
 const { Product } = require("../models/product");
-const { errorMessage, createMessage } = require("../utils/infoMessage");
+const { errorMessage, createMessage, editMessage } = require("../utils/infoMessage");
 
 exports.checkout = async (req, res) => {
     try {
@@ -55,5 +55,35 @@ exports.checkout = async (req, res) => {
         res.status(201).json(createMessage("Order", result));
     } catch (error) {
         res.status(500).json(errorMessage("Checkout failed", error.message));
+    }
+}
+
+exports.cancelOrder = async (req, res) => {
+    try {
+        const order = await Order.findById(req.params.id);
+
+        if (!order) {
+            return res.status(404).json(errorMessage("Order not found"));
+        }
+
+        if (order.status === "cancelled") {
+            return res.status(400).json(errorMessage("Order already cancelled"));
+        }
+
+        for (const item of order.items) {
+            const product = await Product.findById(item.product);
+
+            if (product) {
+                product.stock += item.quantity;
+                await product.save();
+            }
+        }
+
+        order.status = "cancelled";
+        await order.save();
+
+        res.status(200).json(editMessage("Order cancelled", order));
+    } catch (error) {
+        res.status(500).json(errorMessage("Something went wrong", error.message));
     }
 }
