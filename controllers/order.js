@@ -46,6 +46,7 @@ exports.checkout = async (req, res) => {
             user: req.user._id,
             items: orderItems,
             totalPrice,
+            status: "pending",
         });
 
         const result = await order.save();
@@ -66,8 +67,16 @@ exports.cancelOrder = async (req, res) => {
             return res.status(404).json(errorMessage("Order not found"));
         }
 
+        if (order.user.toString() !== req.user._id.toString()) {
+            return res.status(403).json(errorMessage("Access denied"));
+        }
+
         if (order.status === "cancelled") {
             return res.status(400).json(errorMessage("Order already cancelled"));
+        }
+
+        if (["shipped", "delivered"].includes(order.status)) {
+            return res.status(400).json(errorMessage("Order cannot be cancelled"));
         }
 
         for (const item of order.items) {
@@ -87,3 +96,51 @@ exports.cancelOrder = async (req, res) => {
         res.status(500).json(errorMessage("Something went wrong", error.message));
     }
 }
+
+exports.getUserOrders = async (req, res) => {
+  try {
+    const orders = await Order.find({ user: req.user._id })
+      .populate("items.product", "title images")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({ total: orders.length, data: orders });
+  } catch (error) {
+    res.status(500).json(errorMessage("Something went wrong", error.message));
+  }
+};
+
+exports.getAllOrders = async (req, res) => {
+  try {
+    const filter = {};
+
+    if (req.query.status) {
+      filter.status = req.query.status;
+    }
+
+    if (req.query.user) {
+      filter.user = req.query.user;
+    }
+
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const orders = await Order.find(filter)
+      .populate("user", "fullname email")
+      .populate("items.product", "title price")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    const total = await Order.countDocuments(filter);
+
+    res.status(200).json({
+      total,
+      page,
+      limit,
+      data: orders,
+    });
+  } catch (error) {
+    res.status(500).json(errorMessage("Something went wrong", error.message));
+  }
+};

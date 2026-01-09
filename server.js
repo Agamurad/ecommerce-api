@@ -24,7 +24,7 @@ const basketRouter = require('./routes/client/basket');
 app.use("./api/v1/basket", auth, basketRouter);
 
 const orderRouter = require("./routes/client/order");
-app.use("/api/v1/order", orderRouter);
+app.use("/api/v1/order", auth, orderRouter);
 
 
 // ADMİN ROUTERS
@@ -38,6 +38,8 @@ app.use("/api/v1/ad/category", auth, isAdmin, categoryRouter);
 const productRouter = require("./routes/admin/product");
 app.use("/api/v1/ad/product", auth, isAdmin, productRouter);
 
+const adminOrderRouter = require("./routes/admin/order");
+app.use("/api/v1/ad/order", auth, isAdmin, adminOrderRouter);
 
 
 app.listen(PORT, () => {

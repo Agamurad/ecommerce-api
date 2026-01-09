@@ -5,6 +5,6 @@ const isAdmin = require("../../middleware/isAdmin");
 const router = express.Router();
 
 router.post("/checkout", checkout);
-router.put("/:id/cancel", isAdmin, cancelOrder);
+router.get("/my", getUserOrders);
 
 module.exports = router;
