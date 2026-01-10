@@ -144,3 +144,38 @@ exports.getAllOrders = async (req, res) => {
     res.status(500).json(errorMessage("Something went wrong", error.message));
   }
 };
+
+exports.updateOrderStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+
+    const allowedStatus = ["pending", "paid", "shipped", "delivered", "cancelled"];
+
+    if (!allowedStatus.includes(status)) {
+      return res.status(400).json(errorMessage("Invalid order status"));
+    }
+
+    const order = await Order.findById(req.params.id);
+
+    if (!order) {
+      return res.status(404).json(errorMessage("Order not found"));
+    }
+
+    if (["cancelled", "delivered"].includes(order.status)) {
+      return res.status(400).json(
+        errorMessage("Order status cannot be changed")
+      );
+    }
+
+    if (order.status === "shipped" && status === "pending") {
+      return res.status(400).json(errorMessage("Invalid status transition"));
+    }
+
+    order.status = status;
+    await order.save();
+
+    res.status(200).json(editMessage("Order status updated", order));
+  } catch (error) {
+    res.status(500).json(errorMessage("Something went wrong", error.message));
+  }
+};
