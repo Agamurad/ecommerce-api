@@ -4,58 +4,75 @@ const { Product } = require("../models/product");
 const { errorMessage, createMessage, editMessage } = require("../utils/infoMessage");
 
 exports.checkout = async (req, res) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
     try {
-        const basket = await Basket.findOne({ user: req.user._id }).populate("items.product");
+      const basket = await Basket.findOne({ user: req.user._id })
+        .populate("items.product")
+        .session(session);
 
-        if (!basket || basket.items.length === 0) {
-            return res.status(400).json(errorMessage("Basket is empty"));
+      if (!basket || basket.items.length === 0) {
+        await session.abortTransaction();
+        return res.status(400).json(errorMessage("Basket is empty"));
+      }
+
+      let totalPrice = 0;
+      const orderItems = [];
+
+      for (const item of basket.items) {
+        const product = item.product;
+
+        if (!product) {
+          await session.abortTransaction();
+          return res.status(404).json(errorMessage("Product not found"));
         }
 
-        let totalPrice = 0;
-        const orderItems = [];
-
-        for (const item of basket.items) {
-            const product = item.product;
-
-            if (!product) {
-                return res.status(404).json(errorMessage("Product not found"));
-            }
-
-            if (product.stock < item.quantity) {
-                return res.status(400).json(errorMessage(`Not enough stock for ${product.title}`));
-            }
-
-            const price = product.discountPrice || product.price;
-
-            totalPrice += price * item.quantity;
-
-            orderItems.push({
-                product: product._id,
-                quantity: item.quantity,
-                price,
-            });
+        if (product.stock < item.quantity) {
+          await session.abortTransaction();
+          return res
+            .status(400)
+            .json(errorMessage(`Not enough stock for ${product.title}`));
         }
 
-        for (const item of basket.items){
-            await Product.findByIdAndUpdate(item.product._id, {
-                $inc: { stock: -item.quantity},
-            });
-        }
+        const price = product.discountPrice || product.price;
 
-        const order = new Order({
-            user: req.user._id,
-            items: orderItems,
-            totalPrice,
-            status: "pending",
+        totalPrice += price * item.quantity;
+
+        orderItems.push({
+          product: product._id,
+          quantity: item.quantity,
+          price,
         });
+      }
+      for (const item of basket.items) {
+        await Product.findByIdAndUpdate(
+          item.product._id,
+          { $inc: { stock: -item.quantity } },
+          { session }
+        );
+      }
 
-        const result = await order.save();
+      const order = new Order({
+        user: req.user._id,
+        items: orderItems,
+        totalPrice,
+        status: "pending",
+      });
 
-        await Basket.findOneAndDelete({ user: req.user._id });
+      await order.save({ session });
 
-        res.status(201).json(createMessage("Order", result));
+      await Basket.findOneAndDelete({ user: req.user._id }).session(session);
+
+      await session.commitTransaction();
+      session.endSession();
+
+      res.status(201).json(createMessage("Order", order));
     } catch (error) {
-        res.status(500).json(errorMessage("Checkout failed", error.message));
+      await session.abortTransaction();
+      session.endSession();
+
+      res.status(500).json(errorMessage("Checkout failed", error.message));
     }
 }
 
