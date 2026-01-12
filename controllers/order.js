@@ -58,6 +58,12 @@ exports.checkout = async (req, res) => {
         items: orderItems,
         totalPrice,
         status: "pending",
+        statusHistory: [
+          {
+            status: "pending",
+            changedBy: req.user._id,
+          },
+        ],
       });
 
       await order.save({ session });
@@ -167,28 +173,26 @@ exports.updateOrderStatus = async (req, res) => {
     const { status } = req.body;
 
     const allowedStatus = ["pending", "paid", "shipped", "delivered", "cancelled"];
-
     if (!allowedStatus.includes(status)) {
       return res.status(400).json(errorMessage("Invalid order status"));
     }
 
     const order = await Order.findById(req.params.id);
-
     if (!order) {
       return res.status(404).json(errorMessage("Order not found"));
     }
 
     if (["cancelled", "delivered"].includes(order.status)) {
-      return res.status(400).json(
-        errorMessage("Order status cannot be changed")
-      );
-    }
-
-    if (order.status === "shipped" && status === "pending") {
-      return res.status(400).json(errorMessage("Invalid status transition"));
+      return res.status(400).json(errorMessage("Order status cannot be changed"));
     }
 
     order.status = status;
+
+    order.statusHistory.push({
+      status,
+      changedBy: req.user._id,
+    });
+
     await order.save();
 
     res.status(200).json(editMessage("Order status updated", order));
