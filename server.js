@@ -26,6 +26,8 @@ app.use("./api/v1/basket", auth, basketRouter);
 const orderRouter = require("./routes/client/order");
 app.use("/api/v1/order", auth, orderRouter);
 
+const paymentRouter = require("./routes/client/payment");
+app.use("/api/v1/payments", paymentRouter);
 
 // ADMİN ROUTERS
 
