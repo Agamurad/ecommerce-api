@@ -7,6 +7,5 @@ const {
 const router = express.Router();
 
 router.post("/create-intent", createPaymentIntent);
-router.post("/confirm", confirmPayment);
 
 module.exports = router;

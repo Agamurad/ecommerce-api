@@ -8,10 +8,14 @@ const isAdmin = require('./middleware/isAdmin');
 const app = express();
 
 app.use(cors());
-app.use(express.json());
 connectdb();
 const PORT = process.env.PORT || 3001;
 
+
+const stripeWebhookRouter = require("./routes/stripeWebhook");
+app.use("/api/v1/stripe", stripeWebhookRouter);
+
+app.use(express.json());
 // CLIENT ROUTERS
 
 const surfaceRouter = require('./routes/client/surface');
@@ -21,13 +25,13 @@ const authRouter = require('./routes/client/auth');
 app.use('/api/v1/auth', authRouter);
 
 const basketRouter = require('./routes/client/basket');
-app.use("./api/v1/basket", auth, basketRouter);
+app.use("/api/v1/basket", auth, basketRouter);
 
 const orderRouter = require("./routes/client/order");
 app.use("/api/v1/order", auth, orderRouter);
 
 const paymentRouter = require("./routes/client/payment");
-app.use("/api/v1/payments", paymentRouter);
+app.use("/api/v1/payment", auth, paymentRouter);
 
 // ADMİN ROUTERS
 

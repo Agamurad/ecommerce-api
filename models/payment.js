@@ -18,7 +18,8 @@ const paymentSchema = new mongoose.Schema(
     },
     provider: {
       type: String,
-      default: "mock",
+      enum: ["stripe"],
+      default: "stripe",
     },
     status: {
       type: String,
@@ -28,6 +29,11 @@ const paymentSchema = new mongoose.Schema(
     transactionId: {
       type: String,
     },
+    stripeEventId: {
+      type: String,
+      unique: true,
+      sparse: true,
+    }
   },
   { timestamps: true }
 );
