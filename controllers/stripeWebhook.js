@@ -20,9 +20,13 @@ exports.stripeWebhook = async (req, res) => {
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  if (
-    !["checkout.session.completed", "charge.refunded"].includes(event.type)
-  ) {
+  const allowedEvents = [
+    "checkout.session.completed",
+    "charge.refunded",
+    "payment_intent.payment_failed",
+  ];
+
+  if (!allowedEvents.includes(event.type)) {
     return res.json({ received: true });
   }
 
@@ -33,12 +37,13 @@ exports.stripeWebhook = async (req, res) => {
     if (event.type === "checkout.session.completed") {
       const data = event.data.object;
 
-      const existing = await Payment.findOne({
+      const alreadyHandled = await Payment.findOne({
         stripeEventId: event.id,
       }).session(session);
 
-      if (existing) {
+      if (alreadyHandled) {
         await session.abortTransaction();
+        session.endSession();
         return res.json({ received: true });
       }
 
@@ -48,6 +53,7 @@ exports.stripeWebhook = async (req, res) => {
 
       if (!payment) {
         await session.abortTransaction();
+        session.endSession();
         return res.json({ received: true });
       }
 
@@ -59,6 +65,7 @@ exports.stripeWebhook = async (req, res) => {
 
       if (!order || order.status !== "pending") {
         await session.abortTransaction();
+        session.endSession();
         return res.json({ received: true });
       }
 
@@ -72,6 +79,24 @@ exports.stripeWebhook = async (req, res) => {
       await order.save({ session });
     }
 
+    if (event.type === "payment_intent.payment_failed") {
+      const intent = event.data.object;
+
+      const payment = await Payment.findOne({
+        transactionId: intent.id,
+      }).session(session);
+
+      if (!payment || payment.status !== "pending") {
+        await session.abortTransaction();
+        session.endSession();
+        return res.json({ received: true });
+      }
+
+      payment.status = "failed";
+      payment.stripeEventId = event.id;
+      await payment.save({ session });
+    }
+
     if (event.type === "charge.refunded") {
       const charge = event.data.object;
 
@@ -81,10 +106,11 @@ exports.stripeWebhook = async (req, res) => {
 
       if (!payment || payment.status !== "success") {
         await session.abortTransaction();
+        session.endSession();
         return res.json({ received: true });
       }
 
-      payment.status = "failed";
+      payment.status = "refunded";
       payment.stripeEventId = event.id;
       await payment.save({ session });
 
@@ -92,6 +118,7 @@ exports.stripeWebhook = async (req, res) => {
 
       if (!order || order.status === "cancelled") {
         await session.abortTransaction();
+        session.endSession();
         return res.json({ received: true });
       }
 

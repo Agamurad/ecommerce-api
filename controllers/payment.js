@@ -17,7 +17,7 @@ exports.createPaymentIntent = async (req, res) => {
     }
 
     if (order.status !== "pending") {
-      return res.status(400).json(errorMessage("Order already paid"));
+      return res.status(400).json(errorMessage("Order is not payable"));
     }
 
     const existingPayment = await Payment.findOne({
@@ -35,6 +35,7 @@ exports.createPaymentIntent = async (req, res) => {
       amount: order.totalPrice,
       provider: "stripe",
       transactionId: crypto.randomUUID(),
+      status: "pending",
     });
 
     await payment.save();
