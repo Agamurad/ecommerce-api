@@ -47,6 +47,9 @@ app.use("/api/v1/ad/product", auth, isAdmin, productRouter);
 const adminOrderRouter = require("./routes/admin/order");
 app.use("/api/v1/ad/order", auth, isAdmin, adminOrderRouter);
 
+const adminPaymentRouter = require("./routes/admin/payment");
+app.use("/api/v1/ad/payment", auth, isAdmin, adminPaymentRouter);
+
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
